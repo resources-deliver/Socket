@@ -4,76 +4,6 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-// 发送带4字节头部的数据
-int send_data(int sockfd, const char* data, int len) {
-    if (data == NULL || len <= 0) {
-        return -1;
-    }
-
-    // 将数据长度转换为网络字节序(4字节头部)
-    int net_len = htonl(len);
-
-    // 先发送4字节的长度头
-    int ret = write(sockfd, &net_len, 4);
-    if (ret != 4) {
-        perror("send length error");
-        return -1;
-    }
-
-    // 再发送实际数据
-    ret = write(sockfd, data, len);
-    if (ret != len) {
-        perror("send data error");
-        return -1;
-    }
-
-    return len;
-}
-
-// 接收带4字节头部的数据
-int recv_data(int sockfd, char* buf, int bufsize) {
-    if (buf == NULL || bufsize <= 0) {
-        return -1;
-    }
-
-    // 先读取4字节的长度头
-    int net_len = 0;
-    int ret = read(sockfd, &net_len, 4);
-    if (ret != 4) {
-        if (ret == 0) {
-            return 0;  // 对方关闭连接
-        }
-        perror("recv length error");
-        return -1;
-    }
-
-    // 将网络字节序转换为主机字节序
-    int len = ntohl(net_len);
-
-    // 检查数据长度是否超过缓冲区大小
-    if (len > bufsize) {
-        fprintf(stderr, "data too large: %d > %d\n", len, bufsize);
-        return -1;
-    }
-
-    // 读取实际数据
-    memset(buf, 0, bufsize);
-    int total = 0;
-    while (total < len) {
-        ret = read(sockfd, buf + total, len - total);
-        if (ret <= 0) {
-            if (ret == 0) {
-                return 0;  // 对方关闭连接
-            }
-            perror("recv data error");
-            return -1;
-        }
-        total += ret;
-    }
-
-    return len;
-}
-
 // 服务端IP选择(固定与通用)
 struct server_ip_type{
     const char* ipaddress = "192.168.162.128";    // 服务端IP地址(小端)
@@ -181,10 +111,10 @@ void cli_communication(struct accept_info& info){
         // 接收数据
         char buf[1024];
         memset(buf, 0, sizeof(buf));
-        int len = recv_data(info.accept_ret, buf, sizeof(buf));
+        int len = read(info.accept_ret, buf, sizeof(buf));
         if(len > 0){
             printf("客户端say: %s\n", buf);
-            send_data(info.accept_ret, buf, len);
+            write(info.accept_ret, buf, len);
         }
         else if(len  == 0){
             printf("客户端断开了连接...\n");
