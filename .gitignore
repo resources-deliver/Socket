@@ -1,0 +1,6 @@
+# 忽略编译后的可执行文件
+SingleThread/Compiled/
+# 忽略其他编译产物
+*.o
+*.out
+*.exe
