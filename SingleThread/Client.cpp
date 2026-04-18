@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 
 // 发送带4字节头部的数据
-int send_data(int sockfd, const char* data, int len) {
+int send_data(int& sockfd, const char* data, int& len) {
     if (data == NULL || len <= 0) {
         return -1;
     }
@@ -31,7 +31,7 @@ int send_data(int sockfd, const char* data, int len) {
 }
 
 // 接收带4字节头部的数据
-int recv_data(int sockfd, char* buf, int bufsize) {
+int recv_data(int& sockfd, char* buf, int& bufsize) {
     if (buf == NULL || bufsize <= 0) {
         return -1;
     }
@@ -91,8 +91,14 @@ int create_socket(){
 
 // 连接服务器
 int connect_server(int& socket_ret, int& port, const char* ipaddress){
-    int network_protocol = AF_INET;  // 网络协议
-    int network_port = htons(port);  // 客户端端口(大端)
+    // 设置网络协议和端口
+    int network_protocol = AF_INET;
+    int network_port = htons(port);
+    if(network_port == -1){
+        perror("htons error");
+        return -1;
+    }
+
     // 绑定客户端IP地址与端口Port
     struct sockaddr_in cliaddr;
     cliaddr.sin_family = network_protocol;
@@ -102,6 +108,7 @@ int connect_server(int& socket_ret, int& port, const char* ipaddress){
         perror("inet_pton error");
         return -1;
     }
+    
     // 连接服务器
     int connect_ret = connect(socket_ret, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
     if(connect_ret == -1){
@@ -118,13 +125,15 @@ void ser_communication(int& socket_ret){
         // 发送数据
         char buf[1024];
         sprintf(buf, "你好, 服务器...%d\n", number++);
-        if (send_data(socket_ret, buf, strlen(buf)+1) == -1) {
+        int bufferlen = strlen(buf) + 1;
+        if(send_data(socket_ret, buf, bufferlen) == -1){
             break;
         }
         
         // 接收数据
-        memset(buf, 0, sizeof(buf));
-        int len = recv_data(socket_ret, buf, sizeof(buf));
+        int buffersize = sizeof(buf);
+        memset(buf, 0, buffersize);
+        int len = recv_data(socket_ret, buf, buffersize);
         if(len > 0){
             printf("服务器say: %s\n", buf);
         }

@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 
 // 发送带4字节头部的数据
-int send_data(int sockfd, const char* data, int len) {
+int send_data(int& sockfd, const char* data, int& len) {
     if (data == NULL || len <= 0) {
         return -1;
     }
@@ -31,7 +31,7 @@ int send_data(int sockfd, const char* data, int len) {
 }
 
 // 接收带4字节头部的数据
-int recv_data(int sockfd, char* buf, int bufsize) {
+int recv_data(int& sockfd, char* buf, int& bufsize) {
     if (buf == NULL || bufsize <= 0) {
         return -1;
     }
@@ -78,11 +78,12 @@ int recv_data(int sockfd, char* buf, int bufsize) {
 struct server_ip_type{
     const char* ipaddress = "192.168.162.128";    // 服务端IP地址(小端)
     in_addr_t network_ipaddress = INADDR_ANY;     // 服务端IP地址(大端)
+    /* INADDR_ANY（默认本机网卡）, 一般用于本地的绑定操作, 地址为0.0.0.0（类似于127.0.0.1） */
 };
 
 // 接受客户端连接信息
 struct accept_info{
-    struct sockaddr_in cliaddr;
+    struct sockaddr_in cliaddr;  // 存放客户端地址信息
     int accept_ret;
 };
 
@@ -103,17 +104,23 @@ int create_socket(){
 
 // 绑定socket
 int bind_socket(int& socket_ret, int& port, struct server_ip_type& iptype){
-    int network_protocol = AF_INET;  // 网络协议
-    int network_port = htons(port);  // 服务端端口(大端)
-    
-    // 设置端口复用
-    int opt = 1;
-    if(setsockopt(socket_ret, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1){
-        perror("setsockopt error");
+    // 设置网络协议与端口转换
+    int network_protocol = AF_INET;
+    int network_port = htons(port);
+    if(network_port == -1){
+        perror("bind htons error");
         return -1;
     }
     
-    // 绑定服务端IP地址与端口Port
+    // 设置端口复用
+    int opt = 1;
+    int reuse_port = setsockopt(socket_ret, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    if(reuse_port == -1){
+        perror("bind setsockopt error");
+        return -1;
+    }
+    
+    // 绑定服务端网络协议、IP地址与端口Port
     struct sockaddr_in seraddr;
     seraddr.sin_family = network_protocol;
     seraddr.sin_port = network_port;
@@ -125,6 +132,7 @@ int bind_socket(int& socket_ret, int& port, struct server_ip_type& iptype){
     //     &seraddr.sin_addr.s_addr
     // );
     socklen_t seraddr_len = sizeof(seraddr);
+
     // 绑定socket
     int bind_ret = bind(socket_ret, (struct sockaddr*)&seraddr, seraddr_len);
     if(bind_ret == -1){
@@ -132,11 +140,10 @@ int bind_socket(int& socket_ret, int& port, struct server_ip_type& iptype){
         return -1;
     }
     return bind_ret;
-    /* INADDR_ANY（默认本机网卡）, 一般用于本地的绑定操作, 地址为0.0.0.0（类似于127.0.0.1） */
 }
 
 // 监听socket
-int listen_socket(int socket_ret, int once_connection_max){
+int listen_socket(int& socket_ret, int& once_connection_max){
     // 设置监听
     int listen_ret = listen(socket_ret, once_connection_max);
     if(listen_ret == -1){
@@ -147,7 +154,7 @@ int listen_socket(int socket_ret, int once_connection_max){
 }
 
 // 接受客户端连接
-accept_info accept_connect(int socket_ret){
+accept_info accept_connect(int& socket_ret){
     struct accept_info info;
     socklen_t cliaddr_len = sizeof(info.cliaddr);
     // 阻塞等待连接
@@ -180,8 +187,9 @@ void cli_communication(struct accept_info& info){
     while(1){
         // 接收数据
         char buf[1024];
-        memset(buf, 0, sizeof(buf));
-        int len = recv_data(info.accept_ret, buf, sizeof(buf));
+        int buffersize = sizeof(buf);
+        memset(buf, 0, buffersize);
+        int len = recv_data(info.accept_ret, buf, buffersize);
         if(len > 0){
             printf("客户端say: %s\n", buf);
             send_data(info.accept_ret, buf, len);
