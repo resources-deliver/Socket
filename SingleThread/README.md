@@ -2,99 +2,99 @@
 
 ## 简介
 
-该文件夹下的 Client.cpp 和 Server.cpp 为单线程的 Socket 通信程序。Server.cpp 为服务器端，Client.cpp 为客户端。
+基于TCP协议的单线程Socket通信程序，采用面向对象设计，实现客户端与服务器端的双向通信。使用C++11标准编写，通过Socket基类派生出Server和Client子类，实现代码复用。
 
 ### 特点
-- 基于 TCP 协议的 Socket 通信
-- 单线程实现，服务端只能连接一个客户端
-- 遇到多个客户端连接，从第二个客户端开始会阻塞
-- 支持客户端与服务器端的双向通信
+- 基于TCP协议的Socket通信
+- 面向对象设计，通过继承实现代码复用
+- 带长度头的数据包协议，确保数据完整性
+- 单线程实现，一次只能处理一个客户端
+- 支持双向通信
+- 支持端口复用
 
-## 文件说明
+## 结构
 
-- `Server.cpp` - 服务器端程序，负责监听和接受客户端连接，并与客户端进行通信
-- `Client.cpp` - 客户端程序，负责连接服务器，并与服务器进行通信
-- `README.md` - 说明文档
+```
+SingleThread/
+├── Client/              # 客户端代码
+│   ├── ClientHeader.hpp
+│   ├── ClientMain.cpp
+│   ├── ClientSocket.cpp
+│   └── ClientCommunication.cpp
+├── Server/              # 服务器代码
+│   ├── ServerHeader.hpp
+│   ├── ServerMain.cpp
+│   ├── ServerSocket.cpp
+│   └── ServerCommunication.cpp
+├── Compiled/            # 编译输出
+└── README.md
+```
 
-## 编译方法
-
-服务端和客户端应该分开编译运行，分别使用以下命令：
+## 编译运行
 
 ```bash
 # 编译服务端
-g++ -std=c++11 -Wall Server.cpp -o server
+g++ -std=c++11 -Wall Server/*.cpp -o Compiled/server
 
 # 编译客户端
-g++ -std=c++11 -Wall Client.cpp -o client
+g++ -std=c++11 -Wall Client/*.cpp -o Compiled/client
+
+# 运行服务端
+./Compiled/server
+
+# 运行客户端
+./Compiled/client
 ```
 
-## 运行说明
+默认配置：服务端端口8080，绑定所有网卡；客户端连接127.0.0.1:8080（可在代码中修改）。
 
-### 启动服务端
+## 类设计
 
-```bash
-./server
-```
+### Socket 基类
+- `SendData()` - 发送带4字节长度头的数据包
+- `RecvData()` - 接收带4字节长度头的数据包
+- `Close()` - 关闭Socket
 
-服务端默认配置：
-- 监听端口：8080
-- IP 地址：使用 INADDR_ANY（绑定到所有可用网卡）
+### Client 类
+- `Connect()` - 连接服务器
+- `Communicate()` - 与服务器通信（每秒发送一条消息）
 
-### 启动客户端
-
-```bash
-./client
-```
-
-客户端默认配置：
-- 连接端口：8080
-- 服务器 IP：192.168.162.128（此处为本机IP）
-
-**注意**：请根据实际网络环境修改 Client.cpp 中的服务器 IP 地址。
+### Server 类
+- `Init()` - 初始化服务器（创建、绑定、监听）
+- `AcceptClient()` - 接受客户端连接
+- `Communicate()` - 与客户端通信
 
 ## 功能说明
 
-### 服务端功能
+**服务端**：创建Socket、绑定端口、监听、接受连接、显示客户端信息、双向通信、处理断开。
 
-1. 创建 Socket
-2. 绑定 IP 地址和端口
-3. 设置监听（最大同时连接数为 128）
-4. 接受客户端连接
-5. 显示客户端连接信息（IP 地址和端口）
-6. 与客户端进行双向通信（接收消息并原样返回）
-7. 处理客户端断开连接
-
-### 客户端功能
-
-1. 创建 Socket
-2. 连接服务器
-3. 与服务器进行双向通信
-   - 每隔 1 秒发送一条消息
-   - 接收并显示服务器返回的消息
-4. 处理服务器断开连接
+**客户端**：创建Socket、连接服务器、双向通信（每秒发送消息）、处理断开。
 
 ## 通信流程
 
-1. 服务端启动并监听端口
+1. 服务端启动并监听
 2. 客户端连接服务器
-3. 建立连接后，客户端每隔 1 秒向服务器发送消息
-4. 服务器接收消息后原样返回给客户端
-5. 任一方断开连接，通信结束
+3. 客户端每秒发送消息
+4. 服务器原样返回消息
+5. 任一方断开，通信结束
+
+## 数据包协议
+
+前4字节：数据长度（网络字节序）
+后续字节：实际数据
 
 ## 注意事项
 
-1. 该程序为单线程实现，无法同时处理多个客户端连接
-2. 如需处理多个客户端，需要使用多线程或多进程方式
-3. 请确保服务器 IP 地址和端口配置正确
-4. 防火墙可能需要开放 8080 端口
+1. 单线程实现，无法同时处理多个客户端
+2. 请确保服务器IP和端口配置正确
+3. 防火墙可能需要开放8080端口
 
 ## 技术要点
 
-- 使用 `socket()` 创建套接字
-- 使用 `bind()` 绑定地址和端口
-- 使用 `listen()` 设置监听
-- 使用 `accept()` 接受客户端连接
-- 使用 `connect()` 连接服务器
-- 使用 `read()` 和 `write()` 进行数据收发
-- 使用 `inet_pton()` 和 `inet_ntop()` 进行 IP 地址转换
-- 使用 `htons()` 和 `ntohs()` 进行端口字节序转换
+- socket/bind/listen/accept/connect
+- read/write数据收发
+- inet_pton/inet_ntop IP转换
+- htons/ntohs/htonl/ntohl字节序转换
+- setsockopt端口复用
+- 面向对象设计
+- C++11 lambda函数
