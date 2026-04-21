@@ -129,67 +129,28 @@ void Server::Run(){
 }
 
 // 与客户端通信
-bool Server::Communicate(int acceptSocket){
+bool Server::Communicate(int acceptSocketFd){
     char buf[1024];  // ......存放客户端发送的数据
     while(true){
         memset(buf, 0, sizeof(buf));  // .......清空缓冲区
-        
-        // 接收客户端数据 - 直接使用acceptSocket，不修改sockfd_
-        int len = 0;
-        // 先读取4字节的长度头
-        int net_len = 0;
-        int readHeader = read(acceptSocket, &net_len, 4);
-        if(readHeader != 4){
-            if(readHeader == 0){
-                std::cout << "客户端断开了连接..." << std::endl;
-                break;
-            }
-            perror("Recv data head error!");
-            break;
-        }
-        
-        // 检查数据长度是否超过缓冲区大小
-        len = ntohl(net_len);
-        int bufferSize = sizeof(buf);
-        if(len > bufferSize){
-            std::cerr << "Data too large: " << len << " > " << bufferSize << std::endl;
-            break;
-        }
-        
-        // 读取实际数据
-        int total = 0;
-        while(total < len){
-            int readData = read(acceptSocket, buf + total, len - total);
-            if(readData <= 0){
-                if(readData == 0){
-                    std::cout << "客户端断开了连接..." << std::endl;
-                    break;
-                }
-                perror("Recv data error!");
-                break;
-            }
-            total += readData;
-        }
-        if(total != len) break;  // 读取数据不完整，退出循环
-        
+        // (读取)接收客户端发送的数据
+        int len = RecvData(acceptSocketFd, buf, sizeof(buf));
         if(len > 0){
             std::cout << "客户端say: " << buf << std::endl;
-            // 发送回显数据 - 直接使用acceptSocket
-            // 先写入4字节的长度头
-            int net_len_send = htonl(len);
-            int writeHeader = write(acceptSocket, &net_len_send, 4);
-            if(writeHeader != 4){
-                perror("Send data head error!");
-                break;
-            }
-            // 再写入实际数据
-            int writeData = write(acceptSocket, buf, len);
-            if(writeData != len){
-                perror("Send data error!");
+            // (写入)发送回显数据
+            if(!SendData(acceptSocketFd, buf, len)){
                 break;
             }
         }
+        else if(len == 0){
+            std::cout << "客户端断开了连接..." << std::endl;
+            break;
+        }
+        else{
+            perror("Recv data error!");
+            break;
+        }
     }
-    close(acceptSocket);  // 关闭客户端socket
+    close(acceptSocketFd);  // 关闭连接的客户端socket
     return true;
 }

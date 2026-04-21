@@ -123,33 +123,25 @@ int Server::AcceptClient(){
 }
 
 // 与客户端通信
-bool Server::Communicate(int acceptSocket){
+bool Server::Communicate(int acceptSocketFd){
     char buf[1024];  // ......存放客户端发送的数据
     while(true){
         memset(buf, 0, sizeof(buf));  // .......清空缓冲区
-        // 临时保存sockfd_，用于RecvData
-        int original_sockfd = sockfd_;
-        sockfd_ = acceptSocket;
-        // 接收客户端数据
-        int len = RecvData(buf, sizeof(buf));
-        // 恢复原来的sockfd_
-        sockfd_ = original_sockfd;
+        // (读取)接收客户端发送的数据
+        int len = RecvData(acceptSocketFd, buf, sizeof(buf));
         if(len > 0){
             std::cout << "客户端say: " << buf << std::endl;
-            // 发送回显数据
-            sockfd_ = acceptSocket;
-            if(!SendData(buf, len)){
-                sockfd_ = original_sockfd;
+            // (写入)发送回显数据
+            if(!SendData(acceptSocketFd, buf, len)){
                 break;
             }
-            sockfd_ = original_sockfd;
         }
         else if(len == 0){
             std::cout << "客户端断开了连接..." << std::endl;
             break;
         }
         else{
-            perror("read");
+            perror("Recv data error!");
             break;
         }
     }
