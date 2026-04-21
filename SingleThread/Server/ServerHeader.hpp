@@ -27,8 +27,8 @@ protected:
     bool is_connected_;  // 连接状态
 
 protected:
-    bool SendData(const char* data, int len);  // 发送带4字节头部数据包的数据
-    int RecvData(char* buf, int bufsize);  // 接收带4字节头部数据包的数据
+    bool SendData(int acceptSocketFd, const char* data, int len);  // 发送带4字节头部数据包的数据
+    int RecvData(int acceptSocketFd, char* buf, int bufsize);  // 接收带4字节头部数据包的数据
     void Close();  // 关闭Socket
 };
 
@@ -41,7 +41,7 @@ public:
 public:
     bool Init(int backlog = 128);  // 初始化服务器（创建socket、绑定、监听）
     int AcceptClient();  // 接受客户端连接
-    bool Communicate(int client_sockfd);  // 与客户端通信（使用accept返回的socket）
+    bool Communicate(int acceptSocketFd);  // 与客户端通信（使用accept返回的socket）
 
 private:
     int port_;  // 服务端端口
