@@ -18,43 +18,16 @@ Socket/
     └── README.md          # 多线程版本说明
 ```
 
-## 版本对比
-
-| 特性 | SingleThread | Threads |
-|------|-------------|---------|
-| 并发处理 | 单个客户端 | 多个客户端 |
-| 线程模型 | 单线程 | 多线程 |
-| 适用场景 | 学习理解 | 生产环境 |
-| 资源占用 | 较低 | 较高 |
-
-## 快速开始
-
-### 单线程版本
+## 编译运行
 
 ```bash
-cd SingleThread
-
 # 编译
 g++ -std=c++11 -Wall Server/*.cpp -o Compiled/server
 g++ -std=c++11 -Wall Client/*.cpp -o Compiled/client
 
 # 运行
 ./Compiled/server      # 终端1
-./Compiled/client      # 终端2
-```
-
-### 多线程版本
-
-```bash
-cd Threads
-
-# 编译
-g++ -std=c++11 -Wall -pthread Server/*.cpp -o Compiled/server
-g++ -std=c++11 -Wall -pthread Client/*.cpp -o Compiled/client
-
-# 运行
-./Compiled/server      # 终端1
-./Compiled/client      # 终端2、3、4...（可启动多个）
+./Compiled/client      # 终端2（多线程版本可启动多个）
 ```
 
 ## 面向对象设计特点
