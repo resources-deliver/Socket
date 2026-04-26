@@ -28,8 +28,6 @@ Threads/
 │   ├── ServerSocket.cpp
 │   └── ServerCommunication.cpp
 ├── Compiled/            # 编译输出
-├── Client.cpp           # 旧版代码
-├── Server.cpp           # 旧版代码
 └── README.md
 ```
 
@@ -37,10 +35,10 @@ Threads/
 
 ```bash
 # 编译服务端
-g++ -std=c++11 -Wall -pthread Server/*.cpp -o Compiled/server
+g++ -std=c++11 -Wall Server/*.cpp -o Compiled/server
 
 # 编译客户端
-g++ -std=c++11 -Wall -pthread Client/*.cpp -o Compiled/client
+g++ -std=c++11 -Wall Client/*.cpp -o Compiled/client
 
 # 运行服务端
 ./Compiled/server
@@ -120,12 +118,3 @@ client_threads_.back().detach();  // 分离线程
 - C++11 lambda函数
 - C++11 std::thread多线程
 - std::vector管理线程
-
-## 与单线程版本对比
-
-| 特性 | 单线程 | 多线程 |
-|------|--------|--------|
-| 并发处理 | 一个客户端 | 多个客户端 |
-| 性能 | 低并发 | 高并发 |
-| 资源占用 | 较低 | 较高 |
-| 适用场景 | 学习理解 | 生产环境 |
